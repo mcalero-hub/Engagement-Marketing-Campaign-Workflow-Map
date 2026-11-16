@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campaign Workflow Map</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#15181d; --ink2:#5b6470; --ink3:#8b95a3;
+  --line:#e3e6ea; --line2:#eef0f3; --accent:#1f3864; --accent-soft:#eaf0fb;
+  --warn:#b45309; --warn-soft:#fef3c7; --gate:#7c3aed; --gate-soft:#f3e8ff;
+  --radius:10px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ---------- header ---------- */
+header{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 18px 0;flex:0 0 auto}
+.titlerow{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+h1{font-size:17px;font-weight:650;margin:0;letter-spacing:-.01em}
+.sub{font-size:12px;color:var(--ink3)}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-bottom:12px}
+.seg{display:inline-flex;background:#eef0f3;border-radius:8px;padding:2px}
+.seg button{border:0;background:none;font:inherit;font-size:12.5px;font-weight:550;color:var(--ink2);
+  padding:6px 13px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.09)}
+.grp{display:flex;align-items:center;gap:7px}
+.lbl{font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.055em;white-space:nowrap}
+input[type="search"]{font:inherit;font-size:13px;padding:7px 11px;border:1px solid var(--line);border-radius:8px;
+  width:220px;background:var(--panel);color:var(--ink)}
+input[type="search"]:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.dd{position:relative}
+.dd>button{font:inherit;font-size:12.5px;padding:7px 11px;border:1px solid var(--line);background:var(--panel);
+  border-radius:8px;cursor:pointer;color:var(--ink2);display:flex;align-items:center;gap:6px}
+.dd>button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.dd .menu{position:absolute;top:calc(100% + 5px);left:0;z-index:60;background:var(--panel);border:1px solid var(--line);
+  border-radius:9px;box-shadow:0 8px 28px rgba(15,23,42,.13);padding:6px;min-width:200px;max-height:330px;overflow:auto;display:none}
+.dd.open .menu{display:block}
+.dd .menu label{display:flex;gap:8px;align-items:center;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:13px}
+.dd .menu label:hover{background:var(--line2)}
+.dd .menu input{margin:0;accent-color:var(--accent)}
+.dd .menu .clr{width:100%;text-align:left;border:0;background:none;font:inherit;font-size:12px;color:var(--accent);
+  padding:6px 8px;cursor:pointer;border-top:1px solid var(--line2);margin-top:4px}
+.ghost{border:0;background:none;font:inherit;font-size:12.5px;color:var(--accent);cursor:pointer;padding:7px 4px}
+.count{font-size:12px;color:var(--ink3);margin-left:auto;white-space:nowrap}
+
+/* ---------- board ---------- */
+.board{flex:1 1 auto;overflow-x:auto;overflow-y:hidden;padding:16px 18px 20px;display:flex;gap:14px;align-items:stretch}
+.col{flex:0 0 232px;display:flex;flex-direction:column;min-height:0}
+.colhead{display:flex;align-items:center;gap:7px;padding:0 3px 9px;position:sticky;top:0}
+.pnum{flex:0 0 auto;width:19px;height:19px;border-radius:5px;background:var(--accent);color:#fff;
+  font-size:10.5px;font-weight:700;display:grid;place-items:center}
+.pname{font-size:12.5px;font-weight:650;letter-spacing:-.005em;line-height:1.2}
+.pcount{font-size:11px;color:var(--ink3);margin-left:auto;font-variant-numeric:tabular-nums}
+.stack{flex:1 1 auto;overflow-y:auto;display:flex;flex-direction:column;gap:7px;padding:1px 3px 3px;min-height:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:9px 10px;cursor:pointer;
+  text-align:left;font:inherit;width:100%;display:block;transition:border-color .12s,box-shadow .12s,opacity .12s}
+.card:hover{border-color:var(--accent);box-shadow:0 2px 10px rgba(31,56,100,.11)}
+.card:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.card.dim{opacity:.26}
+.card.dim:hover{opacity:.55}
+.ctop{display:flex;gap:6px;align-items:flex-start;margin-bottom:5px}
+.snum{flex:0 0 auto;font-size:10px;font-weight:700;color:var(--ink3);background:var(--line2);
+  border-radius:4px;padding:1px 5px;font-variant-numeric:tabular-nums;margin-top:1px}
+.cname{font-size:12.5px;font-weight:550;line-height:1.3;letter-spacing:-.005em}
+.cmeta{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.chip{font-size:10.5px;font-weight:600;padding:1.5px 6px;border-radius:20px;white-space:nowrap;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.chip.inc{background:var(--warn-soft);color:var(--warn)}
+.chip.gate{background:var(--gate-soft);color:var(--gate)}
+.empty{flex:1 1 auto;border:1px dashed var(--line);border-radius:var(--radius);display:grid;place-items:center;
+  padding:16px 10px;text-align:center;font-size:11.5px;color:var(--ink3);line-height:1.4;min-height:78px}
+.nomatch{font-size:11.5px;color:var(--ink3);padding:8px 4px;font-style:italic}
+
+/* ---------- either/or fork ---------- */
+.forkbadge{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  background:var(--warn-soft);color:var(--warn);padding:1.5px 5px;border-radius:4px;cursor:help}
+.pathhead{font-size:10.5px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.055em;
+  padding:2px 2px 4px;cursor:help;display:flex;align-items:center;gap:5px}
+.pathhead::before{content:"";width:3px;height:11px;border-radius:2px;background:var(--accent);flex:0 0 auto}
+.ordiv{display:flex;align-items:center;gap:8px;margin:9px 0 3px;color:var(--warn)}
+.ordiv::before,.ordiv::after{content:"";flex:1;height:1px;background:repeating-linear-gradient(
+  90deg,var(--line) 0 4px,transparent 4px 8px)}
+.ordiv span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;
+  background:var(--warn-soft);padding:2px 8px;border-radius:20px}
+.chip.pathchip{background:var(--accent-soft);color:var(--accent);font-size:11.5px;padding:3px 9px}
+
+/* ---------- automation view ---------- */
+.chip.byline{background:#f1f3f6;color:#5b6470;font-weight:500}
+.autobar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:0 0 13px;
+  border-top:1px solid var(--line2);margin-top:-2px;padding-top:12px}
+.barwrap{flex:1 1 300px;min-width:240px}
+.bar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:var(--line2)}
+.barseg{display:block;height:100%}
+.barnote{display:block;font-size:11.5px;color:var(--ink3);margin-top:5px}
+.keys{display:flex;gap:6px;flex-wrap:wrap}
+.key{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;color:var(--ink2);
+  background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:5px 9px;cursor:pointer}
+.key:hover{border-color:var(--ink3)}
+.key.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.key b{font-variant-numeric:tabular-nums;font-weight:650}
+.key .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.key.clrkey{color:var(--accent);border-style:dashed}
+
+/* ---------- hover card ---------- */
+#tip{position:fixed;z-index:200;max-width:310px;background:#1d2330;color:#f2f4f7;border-radius:9px;
+  padding:10px 12px;font-size:12px;line-height:1.5;box-shadow:0 10px 32px rgba(0,0,0,.3);pointer-events:none;
+  opacity:0;transition:opacity .11s;display:none}
+#tip.show{opacity:1;display:block}
+#tip .tt{font-weight:650;margin-bottom:4px;font-size:12.5px}
+#tip .tm{color:#aab3c2;font-size:11px;margin-top:6px}
+#tip .tm b{color:#dde3ec;font-weight:600}
+
+/* ---------- drawer ---------- */
+#scrim{position:fixed;inset:0;background:rgba(17,22,30,.24);z-index:300;opacity:0;pointer-events:none;transition:opacity .16s}
+#scrim.show{opacity:1;pointer-events:auto}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(430px,94vw);background:var(--panel);z-index:310;
+  box-shadow:-10px 0 36px rgba(15,23,42,.15);transform:translateX(100%);transition:transform .2s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column}
+#drawer.show{transform:none}
+.dhead{padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+.dkick{font-size:11px;font-weight:650;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.dtitle{font-size:17px;font-weight:650;line-height:1.25;letter-spacing:-.01em;padding-right:26px}
+.dclose{position:absolute;top:14px;right:14px;width:28px;height:28px;border:0;background:var(--line2);border-radius:7px;
+  cursor:pointer;color:var(--ink2);font-size:16px;line-height:1;display:grid;place-items:center}
+.dclose:hover{background:var(--line);color:var(--ink)}
+.dbody{flex:1;overflow-y:auto;padding:4px 20px 26px}
+.f{padding:13px 0;border-bottom:1px solid var(--line2)}
+.f:last-child{border-bottom:0}
+.fl{font-size:10.5px;font-weight:650;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.fv{font-size:13.5px;line-height:1.5}
+.fv.lead{font-size:14px;color:var(--ink)}
+.fv.none{color:var(--ink3);font-style:italic;font-size:12.5px}
+.tags{display:flex;flex-wrap:wrap;gap:5px}
+.ul{margin:0;padding-left:17px}
+.ul li{margin:2px 0}
+.dnav{display:flex;gap:8px;padding:14px 20px;border-top:1px solid var(--line);background:#fbfcfd}
+.dnav button{flex:1;font:inherit;font-size:12.5px;padding:8px;border:1px solid var(--line);background:var(--panel);
+  border-radius:8px;cursor:pointer;color:var(--ink2)}
+.dnav button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.dnav button:disabled{opacity:.4;cursor:default}
+a{color:var(--accent)}
+@media (max-width:640px){.col{flex-basis:200px}.count{margin-left:0;width:100%}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="titlerow">
+      <h1>Campaign Workflow Map</h1>
+      <span class="sub">Hover a step for the summary · click for full detail</span>
+    </div>
+    <div class="controls">
+      <div class="grp"><span class="lbl">View</span><div class="seg" id="segView"></div></div>
+      <div class="grp"><span class="lbl">Track</span><div class="seg" id="seg"></div></div>
+      <div class="grp"><span class="lbl">Production</span><div class="seg" id="segPath"></div></div>
+      <div class="dd" id="ddTeam">
+        <button type="button">Team <span class="cnt"></span>&#9662;</button>
+        <div class="menu"></div>
+      </div>
+      <div class="dd" id="ddTool">
+        <button type="button">Tool <span class="cnt"></span>&#9662;</button>
+        <div class="menu"></div>
+      </div>
+      <input type="search" id="q" placeholder="Search steps, docs, tools&hellip;" autocomplete="off">
+      <button class="ghost" id="reset" type="button">Reset</button>
+      <span class="count" id="count"></span>
+    </div>
+    <div id="autobar"></div>
+  </header>
+  <div class="board" id="board"></div>
+</div>
+
+<div id="tip"></div>
+<div id="scrim"></div>
+<aside id="drawer" aria-hidden="true">
+  <div class="dhead">
+    <button class="dclose" id="dclose" type="button" aria-label="Close">&times;</button>
+    <div class="dkick" id="dkick"></div>
+    <div class="dtitle" id="dtitle"></div>
+  </div>
+  <div class="dbody" id="dbody"></div>
+  <div class="dnav">
+    <button id="prev" type="button">&larr; Previous step</button>
+    <button id="next" type="button">Next step &rarr;</button>
+  </div>
+</aside>
+
+<script>
+/* ============================ DATA ============================ */
+/* Source: "campaign-workflow-intake-template" (Google Sheets), Workflow tab.
+   t=track  p=phase  n=step#  s=step name  w=what happens  o=owner team
+   c=contributing  i=inputs  d=outputs  k=tools  dur=duration  dep=depends on
+   g=approval/gate  l=links  x=gotchas                                        */
+const PHASES = ["Proposed","Approved/Planning","Brief Development","Production",
+  "Build","CCO","Compliance Review","Bank Review","Spanish QA","QA 1","QA 2",
+  "Ready to Launch","Launched - Data Pending","Launched - In Reporting"];
+
+/* Automation status. Order matters: it drives the legend and summary bar. */
+const AUTO = ["Automated","Partial","Manual","Candidate"];
+const AUTO_COLOR = {
+  "Automated":["#dcf2e4","#15713f","#2f9e63"],
+  "Partial":  ["#dbeafe","#1e4f9c","#4a86d8"],
+  "Manual":   ["#eceef1","#525c69","#9aa5b4"],
+  "Candidate":["#fdeccd","#8a5206","#d79327"]
+};
+const AUTO_DEF = {
+  "Automated":"Runs without a person doing the work. Someone may still trigger or check it.",
+  "Partial":"A tool does part of it, but a person still has to act for the step to finish.",
+  "Manual":"A person does the work start to finish.",
+  "Candidate":"Manual today, but a close match to something already automated. Not a commitment."
+};
+
+const TRACKS = ["All tracks","Incentive","Non-Incentive"];
+/* Production is an either/or fork: a campaign goes down one path, never both. */
+const PATHS = ["Show both","Marketing-led","Creative-led"];
+const PATH_NOTE = {
+  "Marketing-led":"Marketer builds the creative themselves in Lifecycle Studio, then Creative reviews.",
+  "Creative-led":"Marketer hands off to the Creative team, who produce the creative from scratch."
+};
+
+const D = [
+{t:"All",p:"Proposed",n:1,s:"Begin campaign discussion",w:"Marketer begins discussing campaign and decide if it will be moved forward in the process.",o:"Marketing",a:"Manual"},
+{t:"All",p:"Approved/Planning",n:1,s:"Approved campaign planning",w:"Marketer begins campaign planning.",o:"Marketing",a:"Manual"},
+
+{t:"All",p:"Brief Development",n:1,s:"Generate campaign brief details using skill in Claude",w:"Marketer uses the Claude Automation to generate the campaign brief details.",o:"Marketing",i:"Campaign information",d:"Campaign brief details",k:"Claude",g:"Marketing lead",a:"Partial",ab:"Claude automation"},
+{t:"All",p:"Brief Development",n:2,s:"Copy campaign brief details and paste into campaign brief doc",w:"Marketer copies the details generated and pastes into brief.",o:"Marketing",i:"Campaign brief details from Claude",d:"Campaign brief",k:"Claude",a:"Candidate",ab:"Claude automation",why:"Flagged in the sheet as a candidate, with Claude named as the intended automation."},
+{t:"All",p:"Brief Development",n:3,s:"Add campaign brief URL to Airtable",w:"Marketer will copy/paste the campaign brief URL to the campaign in Airtable.",o:"Marketing",i:"Campaign brief URL",d:"URL in Airtable",k:"Airtable",a:"Candidate",why:"Copy/paste of a URL between two systems, immediately after a step already using Claude."},
+{t:"All",p:"Brief Development",n:4,s:"Ops ticketing tasks added to Airtable project",w:"Ops ticketing tasks added to Airtable project.",o:"PM",c:"Marketing",i:"Checkbox marked",d:"Ops ticketing tasks generated",k:"Airtable",a:"Automated",ab:"Airtable automation"},
+{t:"Incentive",p:"Brief Development",n:5,s:"Submit promotion terms to banks",w:"Submit promotion terms to banks via Brittany's process.",o:"Marketing",c:"Banks",i:"Campaign brief",k:"Airtable",g:"Banks",a:"Manual"},
+
+{t:"All",p:"Production",path:"Marketing-led",n:1,s:"Input campaign information into Lifecycle Studio",w:"Marketer will input campaign information into Lifecycle Studio for the creative to be created.",o:"Marketing",c:"Creative",i:"Campaign information; Campaign brief",d:"Lifecycle Studio output",k:"Lifecycle Studio; Figma",g:"Marketing lead",a:"Manual"},
+{t:"All",p:"Production",path:"Marketing-led",n:2,s:"Transfer the Lifecycle Studio output to a Figma template",w:"Marketer will transfer the Lifecycle Studio output to a Figma template for review/editing.",o:"Marketing",c:"Creative",i:"Lifecycle Studio output",d:"Figma creative",k:"Lifecycle Studio; Figma",g:"Marketing lead",a:"Candidate",why:"Moving output between two tools that are both already in the stack."},
+{t:"All",p:"Production",path:"Marketing-led",n:3,s:"Send automated message to creative Slack channel",w:"Marketer will ensure the automated message is sent to the customer-engagement-mktg-creative Slack channel.",o:"Marketing",c:"Creative",d:"Slack message",k:"Slack",a:"Automated",ab:"Slack automation"},
+{t:"All",p:"Production",path:"Marketing-led",n:4,s:"Reviews and adjustments begin",w:"Creative team reviews the creative and makes adjustments where needed.",o:"Creative",c:"Marketing",i:"Figma",a:"Manual"},
+{t:"All",p:"Production",path:"Marketing-led",n:5,s:"Approval from Creative lead",w:"Creative team lead approves the creative.",o:"Creative",c:"Marketing",i:"Figma",d:"Final Figma creative",k:"Figma",g:"Creative",a:"Manual"},
+
+{t:"All",p:"Production",path:"Creative-led",n:1,s:"Send automated message to creative Slack channel",w:"Marketer will ensure the automated message is sent to the customer-engagement-mktg-creative Slack channel to engage Creative team and request creative needs.",o:"Marketing",c:"Creative",d:"Slack message",a:"Automated",ab:"Slack automation"},
+{t:"All",p:"Production",path:"Creative-led",n:2,s:"Begin reviews and adjustments",w:"Creative team reviews the creative and makes adjustments where needed.",o:"Creative",c:"Marketing",i:"Figma",a:"Manual"},
+{t:"All",p:"Production",path:"Creative-led",n:3,s:"Approval from Creative lead",w:"Creative team lead approves the creative.",o:"Creative",c:"Marketing",i:"Figma",d:"Final Figma creative",k:"Figma",g:"Creative",a:"Manual"},
+
+{t:"All",p:"Build",n:1,s:"Move Airtable campaign into Build process stage",w:"PM moves campaign into Build stage in Airtable.",o:"PM",k:"Airtable",a:"Manual"},
+{t:"All",p:"Build",n:2,s:"Send automated message to crmops-cash-production Slack channel",w:"PM will ensure the automated message is sent to the Slack channel.",o:"PM",i:"Brief; Figma",d:"Slack message",k:"Slack",a:"Automated",ab:"Slack automation"},
+{t:"All",p:"Build",n:3,s:"Scope and assign Stitch and Ops team members to campaign build",w:"Stitch and Ops will scope and assign the team members to campaign build.",o:"Stitch",c:"Ops",i:"Brief; Figma",d:"Assignment in Airtable",k:"Airtable",a:"Manual"},
+{t:"All",p:"Build",n:4,s:"Build canvas and deliverables",w:"Stitch and Ops will build the canvas in Braze and all required deliverables.",o:"Stitch",c:"Ops",i:"Brief; Figma",d:"Braze canvas; Flack messages",k:"Braze; Flack",a:"Manual"},
+{t:"All",p:"Build",n:5,s:"Create QA sheet",w:"Create QA sheet.",o:"Stitch",c:"Ops; PM",d:"QA sheet",k:"Google Doc",a:"Candidate",why:"A templated sheet generated from data already in Airtable and Braze.",x:"Sits after Compliance and Bank Review in the sheet's row order — sequencing still to confirm."},
+{t:"All",p:"Build",n:6,s:"Submit QA sheet with edits from compliance and bank review",w:"Submit QA sheet with edits from compliance and bank review.",o:"PM",i:"QA sheet",k:"Google Doc",a:"Manual"},
+
+{t:"Incentive",p:"CCO",n:1,s:"Use Berd recipe to create Scoping Document",w:"Use Berd recipe to create Scoping Document.",o:"Marketing",i:"Campaign brief",d:"Scoping doc",k:"Berd; Google Doc",a:"Automated",ab:"Berd recipe"},
+{t:"Incentive",p:"CCO",n:2,s:"Upload Scoping Document to Blee",w:"Upload Scoping Document to Blee for legal and compliance review.",o:"PM",a:"Manual"},
+{t:"Incentive",p:"CCO",n:3,s:"Begin reviews and adjustments",w:"PM to lead reviews and adjustments to scoping doc.",o:"PM",c:"Legal; Compliance; Customer Success; Content Ops",k:"Blee; Google Doc",a:"Manual"},
+{t:"Incentive",p:"CCO",n:4,s:"Approval from Legal, Compliance, and Customer Success",w:"Legal, Compliance, and Customer Success approves the scoping doc.",o:"PM",c:"Legal; Compliance; Customer Success; Content Ops",d:"Approved scoping doc",k:"Blee; Google Doc",a:"Manual"},
+{t:"Incentive",p:"CCO",n:5,s:"Submit LCO ticket via Jira",w:"Submit LCO ticket via Jira.",o:"PM",i:"Scoping doc",d:"Jira LCO ticket",k:"Jira",a:"Candidate",why:"Ticket creation from a document that already exists in a known format."},
+{t:"Incentive",p:"CCO",n:6,s:"Scoping and assignment of LCO ticket",w:"Scoping and assignment of LCO ticket.",o:"Content Ops",d:"Assignment in Jira",k:"Jira",a:"Manual"},
+{t:"Incentive",p:"CCO",n:7,s:"Begin reviews and adjustments",w:"PM to lead reviews and adjustments to LCO ticket.",o:"PM",c:"Content Ops",k:"Jira",a:"Manual"},
+{t:"Incentive",p:"CCO",n:8,s:"Submit treasury ticket",w:"Submit treasury ticket.",o:"Marketing",a:"Manual"},
+{t:"Incentive",p:"CCO",n:9,s:"Ensure treasury and budget is approved",w:"Ensure treasury and budget is approved.",o:"Marketing",a:"Manual"},
+{t:"Incentive",p:"CCO",n:10,s:"Post quick texts and knowledge articles",w:"Post quick texts and knowledge articles.",o:"Content Ops",i:"Scoping doc; Jira ticket",d:"Quick texts; Knowledge Articles",k:"Jira",a:"Manual"},
+{t:"Incentive",p:"CCO",n:11,s:"Post Slack comms to CCO Slack channel",w:"Post Slack comms to CCO Slack channel.",o:"PM",i:"Scoping doc",d:"Slack post",k:"Slack",a:"Candidate",why:"Three other Slack posts in this workflow are already automated."},
+
+{t:"All",p:"Compliance Review",n:1,s:"Submit creative assets to Blee via Brazetable",w:"Submit creative assets to Blee via Brazetable.",o:"PM",d:"Blee submission",k:"Brazetable",a:"Partial",ab:"Brazetable"},
+{t:"All",p:"Compliance Review",n:2,s:"Begin reviews and adjustments",w:"PM to lead reviews and adjustments to Braze canvas.",o:"PM",c:"Legal; Compliance",k:"Braze",a:"Manual"},
+{t:"All",p:"Compliance Review",n:3,s:"Make edits to the Braze canvas",w:"Make edits to the Braze canvas based on feedback.",o:"PM",k:"Braze",a:"Manual"},
+{t:"All",p:"Compliance Review",n:4,s:"Upload new version of creative to Blee via Brazetable",w:"Upload new version of creative to Blee via Brazetable.",o:"PM",k:"Blee; Brazetable",a:"Partial",ab:"Brazetable"},
+{t:"All",p:"Compliance Review",n:5,s:"Approve creative",w:"Approve creative from legal, compliance, and banks.",o:"PM",c:"Legal; Compliance",a:"Manual"},
+
+{t:"All",p:"Bank Review",n:1,s:"Submit creative to banks",w:"Submit creative to banks.",o:"Banks",c:"PM",k:"Blee",a:"Manual"},
+{t:"All",p:"Bank Review",n:2,s:"Begin reviews and adjustments",w:"PM to lead reviews and adjustments to Braze canvas.",o:"PM",c:"Banks",k:"Braze",a:"Manual"},
+{t:"All",p:"Bank Review",n:3,s:"Make edits to the Braze canvas",w:"Make edits to the Braze canvas based on feedback.",o:"PM",k:"Braze",a:"Manual"},
+{t:"All",p:"Bank Review",n:4,s:"Upload new version of creative to Blee via Brazetable",w:"Upload new version of creative to Blee via Brazetable.",o:"PM",k:"Blee; Brazetable",a:"Partial",ab:"Brazetable"},
+{t:"All",p:"Bank Review",n:5,s:"Approve creative",w:"Approve creative from banks.",o:"PM",c:"Banks",k:"Blee",a:"Manual"},
+
+{t:"All",p:"QA 1",n:1,s:"Share Braze canvas and QA sheet with PM for QA 1 to begin",w:"Stitch to share QA sheet and Braze canvas for PM to begin QA 1.",o:"Stitch",k:"Braze; Google Doc",a:"Candidate",why:"A handoff notification, the same shape as the Slack messages already automated."},
+{t:"All",p:"QA 1",n:2,s:"Begin QA 1",w:"PM begins QA 1.",o:"PM",c:"Stitch; Ops",i:"QA sheet; Braze canvas; Figma",k:"Braze; Figma",a:"Manual"},
+{t:"All",p:"QA 1",n:3,s:"Begin reviews and adjustments",w:"Stitch reviews the canvas and proofs and makes adjustments where needed.",o:"Stitch",c:"PM; Ops",i:"QA sheet; Braze canvas; Figma",k:"Braze; Figma",a:"Manual"},
+{t:"All",p:"QA 1",n:4,s:"Approval for QA 1",w:"PM approves the creative.",o:"PM",i:"QA sheet; Braze canvas; Figma",k:"Braze; Figma",a:"Manual"},
+
+{t:"All",p:"QA 2",n:1,s:"Share Braze canvas and QA sheet with Marketer for QA 2 to begin",w:"PM to share QA sheet and Braze canvas with Marketer to begin QA 2.",o:"Marketing",c:"PM",i:"QA sheet; Braze canvas; Figma",k:"Braze; Figma",a:"Candidate",why:"Same handoff pattern as the QA 1 share step."},
+{t:"All",p:"QA 2",n:2,s:"Begin QA 2",w:"Marketing begins QA 2.",o:"Marketing",i:"QA sheet; Braze canvas; Figma",k:"Braze; Figma",a:"Manual"},
+{t:"All",p:"QA 2",n:3,s:"Begin reviews and adjustments",w:"Stitch reviews the canvas and proofs and makes adjustments where needed.",o:"Stitch",c:"Marketing; Ops",i:"QA sheet; Braze canvas; Figma",k:"Braze; Figma",a:"Manual"},
+{t:"All",p:"QA 2",n:4,s:"Approval for QA 2",w:"Marketing approves the creative.",o:"Marketing",i:"QA sheet; Braze canvas; Figma",k:"Braze; Figma",a:"Manual"},
+
+{t:"All",p:"Ready to Launch",n:1,s:"Upload audience",w:"Upload audience.",o:"Ops; Analytics",i:"Audience name/file",k:"Braze",a:"Candidate",why:"A file-to-Braze load, the kind of step usually driven by a scheduled job."},
+{t:"All",p:"Ready to Launch",n:2,s:"Share counts",w:"Share counts.",o:"Ops; Analytics",k:"Braze",a:"Candidate",why:"Reading a number out of Braze and posting it."},
+{t:"All",p:"Ready to Launch",n:3,s:"Schedule campaign",w:"Schedule campaign.",o:"Ops",k:"Braze",a:"Partial",ab:"Braze scheduling"}
+];
+
+const TEAM_COLOR = {
+  "Marketing":["#e0efff","#12508f"], "Creative":["#fde6f2","#9d1e60"], "PM":["#e6ecfb","#2c3f8f"],
+  "Stitch":["#e2f4ea","#186642"], "Ops":["#e9f1e0","#4a6a12"], "Analytics":["#fff0dd","#96530a"],
+  "Legal":["#f1e8fd","#5f2eab"], "Compliance":["#efe7fb","#6b3bb0"], "Content Ops":["#e0f3f6","#0d6273"],
+  "Customer Success":["#fde9e3","#a13b18"], "Banks":["#ecedf0","#3e4653"], "Localization":["#f6ecdd","#7a5410"]
+};
+const teamColor = t => TEAM_COLOR[t] || ["#eef0f3","#5b6470"];
+const split = v => (v||"").split(";").map(x=>x.trim()).filter(Boolean);
+
+/* ============================ STATE ============================ */
+D.forEach((r,i)=>{r._i=i; r._teams=[...split(r.o),...split(r.c)]; r._tools=split(r.k); r._tracks=split(r.t);});
+const st = {view:"Workflow", track:"All tracks", path:"Show both",
+  teams:new Set(), tools:new Set(), autos:new Set(), q:"", sel:null};
+const autoOf = r => r.a || "Manual";
+const ALL_TEAMS = [...new Set(D.flatMap(r=>r._teams))].sort();
+const ALL_TOOLS = [...new Set(D.flatMap(r=>r._tools))].sort();
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function inTrack(r){
+  if(!inPath(r)) return false;
+  if(st.track==="All tracks") return true;
+  if(r._tracks.includes("All")) return true;
+  return r._tracks.includes(st.track);
+}
+function inPath(r){ return !r.path || st.path==="Show both" || r.path===st.path; }
+function matches(r){ /* secondary filters — dim rather than hide */
+  if(st.teams.size && !r._teams.some(t=>st.teams.has(t))) return false;
+  if(st.tools.size && !r._tools.some(t=>st.tools.has(t))) return false;
+  if(st.autos.size && !st.autos.has(autoOf(r))) return false;
+  if(st.q){
+    const hay=[r.s,r.w,r.i,r.d,r.k,r.o,r.c,r.g,r.x,r.p,r.path,r.a,r.ab,r.why].join(" ").toLowerCase();
+    if(!hay.includes(st.q.toLowerCase())) return false;
+  }
+  return true;
+}
+const anyFilter = () => st.teams.size||st.tools.size||st.autos.size||st.q;
+
+/* ============================ RENDER ============================ */
+const board=document.getElementById("board");
+function cardHTML(r){
+  const dim=anyFilter()&&!matches(r);
+  const auto=st.view==="Automation";
+  const [bg,fg]=teamColor(split(r.o)[0]);
+  const owner=r.o?`<span class="chip" style="background:${bg};color:${fg}">${esc(r.o)}</span>`:
+    `<span class="chip" style="background:#f3f4f6;color:#9aa3af">No owner</span>`;
+  const inc=!r._tracks.includes("All")?`<span class="chip inc">${esc(r.t)}</span>`:"";
+  const gate=r.g?`<span class="chip gate">Gate</span>`:"";
+  let meta,edge="";
+  if(auto){
+    const s=autoOf(r), [abg,afg,abar]=AUTO_COLOR[s];
+    edge=` style="border-left:4px solid ${abar}"`;
+    const by=r.ab?`<span class="chip byline">${esc(r.ab)}</span>`:"";
+    meta=`<span class="chip" style="background:${abg};color:${afg}">${esc(s)}</span>${by}${inc}`;
+  } else {
+    meta=`${owner}${gate}${inc}`;
+  }
+  return `<button class="card${dim?" dim":""}${st.sel===r._i?" sel":""}"${edge} data-i="${r._i}">
+    <div class="ctop"><span class="snum">${r.n}</span><span class="cname">${esc(r.s)}</span></div>
+    <div class="cmeta">${meta}</div></button>`;
+}
+
+function renderAutoBar(visible){
+  const el=document.getElementById("autobar");
+  if(st.view!=="Automation"){ el.innerHTML=""; el.className=""; return; }
+  el.className="autobar";
+  const total=visible.length||1;
+  const counts=Object.fromEntries(AUTO.map(s=>[s,visible.filter(r=>autoOf(r)===s).length]));
+  const done=counts["Automated"]+counts["Partial"];
+  const bar=AUTO.filter(s=>counts[s]).map(s=>{
+    const pct=counts[s]/total*100;
+    return `<span class="barseg" style="width:${pct}%;background:${AUTO_COLOR[s][2]}" title="${s}: ${counts[s]}"></span>`;
+  }).join("");
+  const keys=AUTO.map(s=>{
+    const on=st.autos.has(s);
+    return `<button class="key${on?" on":""}" data-a="${s}" title="${esc(AUTO_DEF[s])}">
+      <span class="dot" style="background:${AUTO_COLOR[s][2]}"></span>${s}
+      <b>${counts[s]}</b></button>`;
+  }).join("");
+  el.innerHTML=`<div class="barwrap"><div class="bar">${bar}</div>
+    <span class="barnote">${done} of ${visible.length} steps have a tool doing some of the work</span></div>
+    <div class="keys">${keys}${st.autos.size?`<button class="key clrkey" data-a="__clear">Clear</button>`:""}</div>`;
+}
+function render(){
+  const visible=D.filter(inTrack);
+  board.innerHTML = PHASES.map((ph,pi)=>{
+    const rows=visible.filter(r=>r.p===ph).sort((a,b)=>a.n-b.n);
+    let inner;
+    if(!rows.length){
+      inner=`<div class="empty">No steps mapped${st.track!=="All tracks"?" for this track":" yet"}</div>`;
+    } else if(ph==="Production"){
+      const groups=["Marketing-led","Creative-led"].filter(pa=>rows.some(r=>r.path===pa));
+      inner=groups.map((pa,gi)=>{
+        const g=rows.filter(r=>r.path===pa);
+        return (gi?`<div class="ordiv"><span>or</span></div>`:"")
+          +`<div class="pathhead" title="${esc(PATH_NOTE[pa]||"")}">${esc(pa)}</div>`
+          +g.map(cardHTML).join("");
+      }).join("");
+      if(anyFilter()&&!rows.some(matches)) inner+=`<div class="nomatch">No matches in this phase</div>`;
+    } else {
+      const shown=rows.filter(r=>!anyFilter()||matches(r)).length;
+      inner=rows.map(cardHTML).join("")
+        +(anyFilter()&&!shown?`<div class="nomatch">No matches in this phase</div>`:"");
+    }
+    const fork=ph==="Production"&&st.path==="Show both"
+      ? `<span class="forkbadge" title="Either/or — a campaign follows one path, not both">fork</span>` : "";
+    return `<section class="col">
+      <div class="colhead"><span class="pnum">${pi+1}</span><span class="pname">${esc(ph)}</span>
+      ${fork}<span class="pcount">${rows.length}</span></div>
+      <div class="stack">${inner}</div></section>`;
+  }).join("");
+
+  renderAutoBar(visible);
+  const vis=visible.length, hit=visible.filter(matches).length;
+  document.getElementById("count").textContent =
+    anyFilter() ? `${hit} of ${vis} steps match` : `${vis} steps · ${PHASES.filter(p=>visible.some(r=>r.p===p)).length} active phases`;
+  document.getElementById("ddTeam").querySelector(".cnt").textContent = st.teams.size?`(${st.teams.size})`:"";
+  document.getElementById("ddTool").querySelector(".cnt").textContent = st.tools.size?`(${st.tools.size})`:"";
+  document.getElementById("ddTeam").querySelector("button").classList.toggle("on",!!st.teams.size);
+  document.getElementById("ddTool").querySelector("button").classList.toggle("on",!!st.tools.size);
+}
+
+/* ---------- controls ---------- */
+const seg=document.getElementById("seg");
+seg.innerHTML=TRACKS.map(t=>`<button type="button" data-t="${t}" aria-pressed="${t===st.track}">${t}</button>`).join("");
+seg.addEventListener("click",e=>{const b=e.target.closest("button"); if(!b)return;
+  st.track=b.dataset.t; [...seg.children].forEach(c=>c.setAttribute("aria-pressed",c===b)); closeDrawer(); render();});
+
+const segView=document.getElementById("segView");
+segView.innerHTML=["Workflow","Automation"].map(v=>
+  `<button type="button" data-v="${v}" aria-pressed="${v===st.view}">${v}</button>`).join("");
+segView.addEventListener("click",e=>{const b=e.target.closest("button"); if(!b)return;
+  st.view=b.dataset.v; [...segView.children].forEach(c=>c.setAttribute("aria-pressed",c===b));
+  if(st.view!=="Automation") st.autos.clear();
+  render();});
+
+document.getElementById("autobar").addEventListener("click",e=>{
+  const b=e.target.closest(".key"); if(!b)return;
+  if(b.dataset.a==="__clear") st.autos.clear();
+  else st.autos.has(b.dataset.a)?st.autos.delete(b.dataset.a):st.autos.add(b.dataset.a);
+  render();});
+
+const segPath=document.getElementById("segPath");
+segPath.innerHTML=PATHS.map(p=>`<button type="button" data-p="${p}" aria-pressed="${p===st.path}"${
+  PATH_NOTE[p]?` title="${PATH_NOTE[p]}"`:""}>${p}</button>`).join("");
+segPath.addEventListener("click",e=>{const b=e.target.closest("button"); if(!b)return;
+  st.path=b.dataset.p; [...segPath.children].forEach(c=>c.setAttribute("aria-pressed",c===b));
+  closeDrawer(); render();});
+
+function buildDD(id,items,set){
+  const dd=document.getElementById(id), menu=dd.querySelector(".menu");
+  menu.innerHTML=items.map(v=>`<label><input type="checkbox" value="${esc(v)}">${esc(v)}</label>`).join("")
+    +`<button class="clr" type="button">Clear</button>`;
+  dd.querySelector("button").addEventListener("click",e=>{e.stopPropagation();
+    document.querySelectorAll(".dd").forEach(o=>{if(o!==dd)o.classList.remove("open")}); dd.classList.toggle("open");});
+  menu.addEventListener("click",e=>e.stopPropagation());
+  menu.addEventListener("change",e=>{e.target.checked?set.add(e.target.value):set.delete(e.target.value); render();});
+  menu.querySelector(".clr").addEventListener("click",()=>{set.clear();
+    menu.querySelectorAll("input").forEach(i=>i.checked=false); render();});
+}
+buildDD("ddTeam",ALL_TEAMS,st.teams);
+buildDD("ddTool",ALL_TOOLS,st.tools);
+document.addEventListener("click",()=>document.querySelectorAll(".dd").forEach(d=>d.classList.remove("open")));
+
+document.getElementById("q").addEventListener("input",e=>{st.q=e.target.value.trim(); render();});
+document.getElementById("reset").addEventListener("click",()=>{
+  st.teams.clear(); st.tools.clear(); st.autos.clear(); st.q=""; st.track="All tracks"; st.path="Show both";
+  document.getElementById("q").value="";
+  document.querySelectorAll(".dd input").forEach(i=>i.checked=false);
+  [...seg.children].forEach(c=>c.setAttribute("aria-pressed",c.dataset.t==="All tracks"));
+  [...segPath.children].forEach(c=>c.setAttribute("aria-pressed",c.dataset.p==="Show both"));
+  closeDrawer(); render();});
+
+/* ---------- hover tip ---------- */
+const tip=document.getElementById("tip");
+board.addEventListener("mouseover",e=>{
+  const c=e.target.closest(".card"); if(!c)return;
+  const r=D[+c.dataset.i];
+  const bits=[];
+  if(st.view==="Automation")bits.push(`<b>${esc(autoOf(r))}</b>${r.ab?" via "+esc(r.ab):""}`);
+  if(r.path)bits.push(`<b>Path</b> ${esc(r.path)}`);
+  if(r.o)bits.push(`<b>Owner</b> ${esc(r.o)}`);
+  if(r.c)bits.push(`<b>With</b> ${esc(r.c)}`);
+  if(r.k)bits.push(`<b>Tools</b> ${esc(r.k)}`);
+  tip.innerHTML=`<div class="tt">${esc(r.s)}</div><div>${esc(r.w||"No description yet.")}</div>`
+    +(bits.length?`<div class="tm">${bits.join(" &nbsp;·&nbsp; ")}</div>`:"");
+  tip.classList.add("show"); place(e);
+});
+board.addEventListener("mousemove",e=>{if(tip.classList.contains("show"))place(e);});
+board.addEventListener("mouseout",e=>{if(e.target.closest(".card"))tip.classList.remove("show");});
+board.addEventListener("scroll",()=>tip.classList.remove("show"),true);
+function place(e){
+  const w=tip.offsetWidth,h=tip.offsetHeight;
+  let x=e.clientX+15,y=e.clientY+15;
+  if(x+w>innerWidth-10)x=e.clientX-w-15;
+  if(y+h>innerHeight-10)y=Math.max(10,e.clientY-h-15);
+  tip.style.left=x+"px"; tip.style.top=y+"px";
+}
+
+/* ---------- drawer ---------- */
+const drawer=document.getElementById("drawer"), scrim=document.getElementById("scrim");
+board.addEventListener("click",e=>{const c=e.target.closest(".card"); if(c)openStep(+c.dataset.i);});
+
+function field(label,val,kind){
+  if(!val) return `<div class="f"><div class="fl">${label}</div><div class="fv none">Not captured yet</div></div>`;
+  let body;
+  if(kind==="tags"){
+    body=`<div class="tags">${split(val).map(v=>{const[b,f]=teamColor(v);
+      return `<span class="chip" style="background:${b};color:${f};font-size:11.5px;padding:3px 9px">${esc(v)}</span>`}).join("")}</div>`;
+  } else if(kind==="list"){
+    const items=split(val); body=items.length>1?`<ul class="ul">${items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>`:esc(items[0]);
+  } else if(kind==="links"){
+    body=split(val).map(u=>`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`).join("<br>");
+  } else body=esc(val);
+  return `<div class="f"><div class="fl">${label}</div><div class="fv">${body}</div></div>`;
+}
+function openStep(i){
+  const r=D[i]; st.sel=i;
+  document.getElementById("dkick").textContent=`${r.p}${r.path?" · "+r.path:""} · Step ${r.n}`;
+  document.getElementById("dtitle").textContent=r.s;
+  const pathField = r.path
+    ? `<div class="f"><div class="fl">Production path</div><div class="fv"><span class="chip pathchip">${esc(r.path)}</span>
+       <div style="margin-top:6px;color:var(--ink2);font-size:12.5px">${esc(PATH_NOTE[r.path]||"")}
+       Campaigns follow one path or the other, never both.</div></div></div>`
+    : "";
+  const s=autoOf(r), [abg,afg]=AUTO_COLOR[s];
+  const autoField=`<div class="f"><div class="fl">Automation</div><div class="fv">
+    <span class="chip" style="background:${abg};color:${afg};font-size:11.5px;padding:3px 9px">${esc(s)}</span>
+    ${r.ab?`<span class="chip byline" style="font-size:11.5px;padding:3px 9px">${esc(r.ab)}</span>`:""}
+    <div style="margin-top:6px;color:var(--ink2);font-size:12.5px">${esc(AUTO_DEF[s])}</div>
+    ${r.why?`<div style="margin-top:5px;color:var(--ink2);font-size:12.5px"><b>Why flagged:</b> ${esc(r.why)}</div>`:""}
+    </div></div>`;
+  document.getElementById("dbody").innerHTML=
+    `<div class="f"><div class="fl">What happens</div><div class="fv lead">${esc(r.w||"")||'<span class="none">Not captured yet</span>'}</div></div>`
+    + autoField
+    + pathField
+    + field("Track",r.t,"tags")
+    + field("Owner team",r.o,"tags")
+    + field("Contributing teams",r.c,"tags")
+    + field("Inputs / docs needed",r.i,"list")
+    + field("Outputs / deliverables",r.d,"list")
+    + field("Tools / systems",r.k,"tags")
+    + field("Approval / gate",r.g,"list")
+    + field("Typical duration",r.dur)
+    + field("Depends on",r.dep)
+    + field("Links",r.l,"links")
+    + field("Gotchas",r.x);
+  const po=x=>x.path?PATHS.indexOf(x.path):0;
+  const sib=D.filter(inTrack).sort((a,b)=>PHASES.indexOf(a.p)-PHASES.indexOf(b.p)||po(a)-po(b)||a.n-b.n);
+  const at=sib.findIndex(x=>x._i===i);
+  const prev=document.getElementById("prev"), next=document.getElementById("next");
+  prev.disabled=at<=0; next.disabled=at<0||at>=sib.length-1;
+  prev.onclick=()=>openStep(sib[at-1]._i); next.onclick=()=>openStep(sib[at+1]._i);
+  drawer.classList.add("show"); drawer.setAttribute("aria-hidden","false");
+  scrim.classList.add("show"); tip.classList.remove("show"); render();
+  document.querySelector(`.card[data-i="${i}"]`)?.scrollIntoView({block:"nearest",inline:"nearest"});
+}
+function closeDrawer(){st.sel=null; drawer.classList.remove("show"); drawer.setAttribute("aria-hidden","true");
+  scrim.classList.remove("show"); render();}
+document.getElementById("dclose").addEventListener("click",closeDrawer);
+scrim.addEventListener("click",closeDrawer);
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape")closeDrawer();
+  if(drawer.classList.contains("show")){
+    if(e.key==="ArrowRight"&&!document.getElementById("next").disabled)document.getElementById("next").click();
+    if(e.key==="ArrowLeft"&&!document.getElementById("prev").disabled)document.getElementById("prev").click();
+  }});
+
+render();
+</script>
+</body>
+</html>
